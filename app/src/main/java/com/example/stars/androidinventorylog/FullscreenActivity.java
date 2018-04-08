@@ -13,7 +13,6 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
@@ -23,7 +22,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
@@ -33,24 +31,24 @@ import android.widget.Toast;
 import java.util.Arrays;
 
 public class FullscreenActivity extends AppCompatActivity {
-    private static final boolean              AUTO_HIDE               = true;
-    private static final int                  AUTO_HIDE_DELAY_MILLIS  = 3000;
+    private static final boolean AUTO_HIDE              = true;
+    private static final int     AUTO_HIDE_DELAY_MILLIS = 3000;
     private CameraCaptureSession cameraCaptureSession;
     /**
      * Some older devices needs a small delay between UI widget updates
      * and a change of the status and navigation bar.
      */
-    private static final int                  UI_ANIMATION_DELAY      = 300;
-    private static final int REQUEST_CAMERA_PERMISSION                = 100;
-    private final        Handler              mHideHandler            = new Handler ( );
+    private static final int     UI_ANIMATION_DELAY        = 300;
+    private static final int     REQUEST_CAMERA_PERMISSION = 100;
+    private final        Handler mHideHandler              = new Handler ( );
     private HandlerThread mBackgroundHandlerThread;
-    private Handler mBackgroundHandler;
+    private Handler       mBackgroundHandler;
     /**
      * Touch listener to use for in-layout UI controls to delay hiding the
      * system UI. This is to prevent the jarring behavior of controls going away
      * while interacting with activity UI.
      */
-    private final        View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener ( ) {
+    private final View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener ( ) {
         @Override
         public boolean onTouch(View view, MotionEvent motionEvent) {
             if (AUTO_HIDE) {
@@ -64,7 +62,6 @@ public class FullscreenActivity extends AppCompatActivity {
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener ( ) {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            Log.d("Lookforthis", "onSurfaceTextureAvailable");
             openCamera ( );
         }
 
@@ -87,8 +84,8 @@ public class FullscreenActivity extends AppCompatActivity {
         @Override
         public void onImageAvailable(ImageReader reader) {
             Image image;
-            image = reader.acquireNextImage();
-            image.close();
+            image = reader.acquireNextImage ( );
+            image.close ( );
 
         }
     };
@@ -141,51 +138,49 @@ public class FullscreenActivity extends AppCompatActivity {
                     cameraId = cameraIdList[i];
                     break;
                 }
-                if(ActivityCompat.checkSelfPermission ( this, Manifest.permission.CAMERA ) != PackageManager.PERMISSION_GRANTED)
-                {
-                    ActivityCompat.requestPermissions(this,new String[]{
-                            Manifest.permission.CAMERA,
-                    },REQUEST_CAMERA_PERMISSION);
-                    return;
-                }
-                cameraManager.openCamera ( cameraId, new CameraDevice.StateCallback ( ) {
-                    @Override
-                    public void onOpened(@NonNull CameraDevice camera) {
-                        Log.d("LookForthis", "onOpened");
-                        cameraDevice = camera;
-                        createCaptureSession();
-                    }
-
-                    @Override
-                    public void onDisconnected(@NonNull CameraDevice camera) {
-                        cameraDevice.close ();
-                        cameraDevice = null;
-                    }
-
-                    @Override
-                    public void onError(@NonNull CameraDevice camera, int error) {
-                        cameraDevice.close ();
-                        cameraDevice = null;
-                    }
-                }, null );
-
             }
+            if (ActivityCompat.checkSelfPermission ( this, Manifest.permission.CAMERA ) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions ( this, new String[]{
+                        Manifest.permission.CAMERA,
+                }, REQUEST_CAMERA_PERMISSION );
+                return;
+            }
+            cameraManager.openCamera ( cameraId, new CameraDevice.StateCallback ( ) {
+                @Override
+                public void onOpened(@NonNull CameraDevice camera) {
+                    cameraDevice = camera;
+                    createCaptureSession ( );
+                }
+
+                @Override
+                public void onDisconnected(@NonNull CameraDevice camera) {
+                    cameraDevice.close ( );
+                    cameraDevice = null;
+                }
+
+                @Override
+                public void onError(@NonNull CameraDevice camera, int error) {
+                    cameraDevice.close ( );
+                    cameraDevice = null;
+                }
+            }, null );
         } catch (CameraAccessException e) {
             e.printStackTrace ( );
         }
 
+
     }
 
     private void createCaptureSession() {
-        try{
-            SurfaceTexture texture = textureView.getSurfaceTexture ();
-            assert  texture !=null;
+        try {
+            SurfaceTexture texture = textureView.getSurfaceTexture ( );
+            assert texture != null;
             texture.setDefaultBufferSize ( 1920, 1080 );
             Surface                      surface               = new Surface ( texture );
             final CaptureRequest.Builder captureRequestBuilder = cameraDevice.createCaptureRequest ( CameraDevice.TEMPLATE_PREVIEW );
 
             ImageReader imageReader      = ImageReader.newInstance ( 1920, 1080, ImageFormat.YUV_420_888, 5 );
-            Surface     imgReaderSurface =  imageReader.getSurface ();
+            Surface     imgReaderSurface = imageReader.getSurface ( );
 
             captureRequestBuilder.addTarget ( imgReaderSurface );
             captureRequestBuilder.addTarget ( surface );
@@ -194,7 +189,7 @@ public class FullscreenActivity extends AppCompatActivity {
             cameraDevice.createCaptureSession ( Arrays.asList ( surface, imgReaderSurface ), new CameraCaptureSession.StateCallback ( ) {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
-                    if(cameraDevice == null)
+                    if (cameraDevice == null)
                         return;
                     cameraCaptureSession = session;
                     try {
@@ -216,6 +211,7 @@ public class FullscreenActivity extends AppCompatActivity {
             e.printStackTrace ( );
         }
     }
+
     private void stopBackgroundThread() {
         if (mBackgroundHandlerThread != null) {
             mBackgroundHandlerThread.quitSafely ( );
@@ -229,10 +225,10 @@ public class FullscreenActivity extends AppCompatActivity {
         }
     }
 
-    private void startBackgroundThread(){
-        mBackgroundHandlerThread = new HandlerThread ( "Camera Background");
-        mBackgroundHandlerThread.start();
-        mBackgroundHandler = new Handler(mBackgroundHandlerThread.getLooper());
+    private void startBackgroundThread() {
+        mBackgroundHandlerThread = new HandlerThread ( "Camera Background" );
+        mBackgroundHandlerThread.start ( );
+        mBackgroundHandler = new Handler ( mBackgroundHandlerThread.getLooper ( ) );
 
     }
 
@@ -240,7 +236,7 @@ public class FullscreenActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate ( savedInstanceState );
         setContentView ( R.layout.activity_fullscreen );
-        startBackgroundThread ();
+        startBackgroundThread ( );
         mVisible = true;
         mControlsView = findViewById ( R.id.fullscreen_content_controls );
         mContentView = findViewById ( R.id.fullscreen_content );
@@ -277,7 +273,7 @@ public class FullscreenActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause ( );
-        stopBackgroundThread();
+        stopBackgroundThread ( );
     }
 
     private void toggle() {
@@ -289,13 +285,13 @@ public class FullscreenActivity extends AppCompatActivity {
     }
 
     @Override
-    protected  void onResume(){
-        super.onResume ();
-        startBackgroundThread();
-        if(textureView.isAvailable())
-            openCamera();
+    protected void onResume() {
+        super.onResume ( );
+        startBackgroundThread ( );
+        if (textureView.isAvailable ( ))
+            openCamera ( );
         else
-            textureView.setSurfaceTextureListener(textureListener);
+            textureView.setSurfaceTextureListener ( textureListener );
     }
 
     private void hide() {
